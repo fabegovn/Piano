@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Piano</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --sky: #75c7ff;
+      --sun: #ffd15c;
+      --leaf: #54c788;
+      --berry: #ff6f91;
+      --ink: #24324a;
+      --muted: #66758f;
+      --white-key: #ffffff;
+      --black-key: #253047;
+      --highlight: #ffd84d;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Comic Sans MS", "Trebuchet MS", Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 14%, rgba(255, 209, 92, 0.55), transparent 18rem),
+        linear-gradient(180deg, #b9e8ff 0%, #e9f8ff 46%, #f7fbf2 100%);
+      overflow-x: hidden;
+    }
+
+    .scene {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 1rem;
+      padding: clamp(0.75rem, 2vw, 1.5rem);
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 1rem;
+      width: min(1120px, 100%);
+      margin: 0 auto;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 4vw, 3.2rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.2rem);
+    }
+
+    .song-select {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    label {
+      font-size: 1.05rem;
+      font-weight: 800;
+    }
+
+    select,
+    button {
+      font: inherit;
+      border: 2px solid rgba(36, 50, 74, 0.16);
+      color: var(--ink);
+      background: #fff;
+      min-height: 3rem;
+      border-radius: 8px;
+      box-shadow: 0 5px 0 rgba(36, 50, 74, 0.12);
+    }
+
+    select {
+      padding: 0 2.5rem 0 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      padding: 0 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+
+    button:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 rgba(36, 50, 74, 0.14);
+    }
+
+    .reset {
+      background: #eafff3;
+    }
+
+    main {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+    }
+
+    .piano-wrap {
+      background: rgba(255, 255, 255, 0.72);
+      border: 2px solid rgba(255, 255, 255, 0.95);
+      border-radius: 8px;
+      box-shadow: 0 18px 44px rgba(89, 137, 166, 0.22);
+    }
+
+    .piano-wrap {
+      padding: clamp(0.8rem, 2vw, 1.15rem);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 0.9rem;
+      min-width: 0;
+    }
+
+    .piano-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      font-weight: 900;
+      color: var(--muted);
+    }
+
+    .piano {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(5rem, 12rem));
+      justify-content: center;
+      align-items: center;
+      gap: clamp(0.65rem, 2vw, 1.2rem);
+      min-height: clamp(16rem, 44vh, 25rem);
+      padding: clamp(1.2rem, 3vw, 2rem);
+    }
+
+    .key {
+      isolation: isolate;
+      border: 2px solid rgba(36, 50, 74, 0.18);
+      border-radius: 8px;
+      font: inherit;
+      font-weight: 900;
+      width: 100%;
+      min-height: clamp(8.5rem, 24vw, 14rem);
+      padding: 1rem 0.5rem;
+      box-shadow: 0 9px 0 rgba(36, 50, 74, 0.16);
+      transition: opacity 160ms ease, transform 160ms ease, background 120ms ease, box-shadow 120ms ease;
+      touch-action: manipulation;
+    }
+
+    .key.white {
+      background: linear-gradient(180deg, #fff 0%, #f4fbff 100%);
+    }
+
+    .key.black {
+      color: #fff;
+      background: linear-gradient(180deg, #33405b 0%, #151b2b 100%);
+      border-color: #0e1321;
+      box-shadow: 0 7px 0 rgba(0, 0, 0, 0.25);
+    }
+
+    .key.slot-0 {
+      grid-column: 1;
+      transform: translateY(var(--key-y, 1.2rem)) rotate(var(--key-r, -2deg));
+    }
+
+    .key.slot-1 {
+      grid-column: 2;
+      transform: translateY(var(--key-y, -1.2rem)) rotate(var(--key-r, 2deg));
+    }
+
+    .key.slot-2 {
+      grid-column: 3;
+      transform: translateY(var(--key-y, 1.2rem)) rotate(var(--key-r, -2deg));
+    }
+
+    .key.active {
+      transform: translateY(0.3rem) scale(0.98);
+      box-shadow: 0 3px 0 rgba(36, 50, 74, 0.18);
+    }
+
+    .key.target {
+      background: linear-gradient(180deg, #fff8be 0%, #ffd84d 100%);
+      border-color: #e9b600;
+      animation: glow 900ms ease-in-out infinite alternate;
+    }
+
+    .key.black.target {
+      color: #2e2300;
+      background: linear-gradient(180deg, #ffe979 0%, #f6bb1c 100%);
+    }
+
+    .key.wrong {
+      background: linear-gradient(180deg, #ffd2dd 0%, #ff8aa5 100%);
+      border-color: #ef476f;
+      animation: shake 180ms ease-in-out 2;
+    }
+
+    .key span {
+      display: block;
+      pointer-events: none;
+      font-size: clamp(2rem, 6vw, 4.2rem);
+      line-height: 1;
+    }
+
+    .hint {
+      display: block;
+      margin-top: 0.35rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1;
+    }
+
+    .black .hint {
+      color: #cdd7ee;
+    }
+
+    .target .hint {
+      color: inherit;
+    }
+
+    .sun {
+      position: fixed;
+      right: clamp(1rem, 4vw, 3rem);
+      bottom: clamp(0.75rem, 3vw, 2rem);
+      width: clamp(4rem, 11vw, 7rem);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--sun);
+      box-shadow: 0 0 0 0.8rem rgba(255, 209, 92, 0.22);
+      pointer-events: none;
+    }
+
+    @keyframes glow {
+      from { filter: brightness(1); }
+      to { filter: brightness(1.12); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(5px); }
+    }
+
+    @media (max-width: 850px) {
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .song-select {
+        justify-content: stretch;
+      }
+
+      .song-select select,
+      .song-select button {
+        flex: 1 1 11rem;
+      }
+
+      .piano {
+        grid-template-columns: repeat(3, minmax(4.5rem, 1fr));
+        min-height: 17rem;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .scene {
+        padding: 0.65rem;
+      }
+
+      .piano {
+        gap: 0.45rem;
+        padding-inline: 0.3rem;
+      }
+
+      .key span {
+        font-size: 1.9rem;
+      }
+
+      .hint {
+        font-size: 0.68rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene">
+    <header class="topbar">
+      <div class="brand">
+        <h1>Kids Piano</h1>
+      </div>
+      <div class="song-select">
+        <select id="song" aria-label="Select song"></select>
+        <button class="reset" id="autoPlay" type="button">Auto Play</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="piano-wrap">
+        <div class="piano" id="piano" aria-label="Phím đàn"></div>
+      </section>
+    </main>
+
+    <!-- <div class="sun" aria-hidden="true"></div> -->
+  </div>
+
+  <script>
+    // const notes = [
+    //   { name: "C", type: "white", freq: 261.63, key: "a" },
+    //   { name: "C#", type: "black", freq: 277.18, key: "w", after: 0 },
+    //   { name: "D", type: "white", freq: 293.66, key: "s" },
+    //   { name: "D#", type: "black", freq: 311.13, key: "e", after: 1 },
+    //   { name: "E", type: "white", freq: 329.63, key: "d" },
+    //   { name: "F", type: "white", freq: 349.23, key: "f" },
+    //   { name: "F#", type: "black", freq: 369.99, key: "t", after: 3 },
+    //   { name: "G", type: "white", freq: 392.00, key: "g" },
+    //   { name: "G#", type: "black", freq: 415.30, key: "y", after: 4 },
+    //   { name: "A", type: "white", freq: 440.00, key: "h" },
+    //   { name: "A#", type: "black", freq: 466.16, key: "u", after: 5 },
+    //   { name: "B", type: "white", freq: 493.88, key: "j" },
+    //   { name: "C2", type: "white", freq: 523.25, key: "k", label: "C" },
+    //   { name: "D2", type: "white", freq: 587.33, key: "l", label: "D" },
+    //   { name: "E2", type: "white", freq: 659.25, key: ";", label: "E" },
+    //   { name: "F2", type: "white", freq: 698.46, key: "", label: "F" }
+    // ];
+
+    const notes = [
+  // --- QUÃNG 1 ---
+  { name: "C", type: "white", freq: 261.63, key: "a" },
+  { name: "C#", type: "black", freq: 277.18, key: "w", after: "C" },
+  { name: "D", type: "white", freq: 293.66, key: "s" },
+  { name: "D#", type: "black", freq: 311.13, key: "e", after: "D" },
+  { name: "E", type: "white", freq: 329.63, key: "d" },
+  { name: "F", type: "white", freq: 349.23, key: "f" },
+  { name: "F#", type: "black", freq: 369.99, key: "t", after: "F" },
+  { name: "G", type: "white", freq: 392.00, key: "g" },
+  { name: "G#", type: "black", freq: 415.30, key: "y", after: "G" },
+  { name: "A", type: "white", freq: 440.00, key: "h" },
+  { name: "A#", type: "black", freq: 466.16, key: "u", after: "A" },
+  { name: "B", type: "white", freq: 493.88, key: "j" },
+
+  // --- QUÃNG 2 (Đầy đủ từ C2 đến B2) ---
+  { name: "C2", type: "white", freq: 523.25, key: "k", label: "C" },
+  { name: "C#2", type: "black", freq: 554.37, key: "o", after: "C2" }, 
+  { name: "D2", type: "white", freq: 587.33, key: "l", label: "D" },
+  { name: "D#2", type: "black", freq: 622.25, key: "p", after: "D2" },
+  { name: "E2", type: "white", freq: 659.25, key: ";", label: "E" },
+  { name: "F2", type: "white", freq: 698.46, key: "'", label: "F" },
+  { name: "F#2", type: "black", freq: 739.99, key: "[", after: "F2" },
+  { name: "G2", type: "white", freq: 783.99, key: "z", label: "G" }, // Đã bổ sung nốt này cho bài Xuân Mai
+  { name: "G#2", type: "black", freq: 830.61, key: "x", after: "G2" },
+  { name: "A2", type: "white", freq: 880.00, key: "c", label: "A" },
+  { name: "A#2", type: "black", freq: 932.33, key: "v", after: "A2" },
+  { name: "B2", type: "white", freq: 987.77, key: "b", label: "B" }
+];
+    
+    const songs = [
+  
+    {title: "Cả Nhà Thương Nhau", notes: ["C2", "C2", "C2", "A", "C2", "D2", "C2", "A", "A", "D2", "D2", "C2", "D2", "G2", "E2", "C2", "D2", "F2", "D2", "F2", "G2", "G2", "E2", "D2", "E2", "G2", "G", "D2", "C2", "C2"] },
+    {title: "Kìa Con Bướm Vàng",notes: ["C", "D", "E", "C", "C", "D", "E", "C","E", "F", "G", "E", "F", "G","G", "A", "G", "F", "E", "C","G", "A", "G", "F", "E", "C","C", "G", "C", "C", "G", "C"]},
+    {title: "Chiếc Đèn Ông Sao", notes: ["G", "E", "G", "C2", "C2", "D2", "E2", "D2", "C2", "G", "C2", "A", "C2", "G", "A", "G", "E", "G", "D", "G", "E", "G", "C2", "C2", "D2", "E2", "D2", "C2", "D2", "C2", "D2", "E2", "D2", "C2", "G", "E", "A", "G", "C2", "C2", "C2", "E2", "E2", "C2", "C2", "C2", "E2", "E2", "D2", "E2", "D2", "C2", "D2", "E2", "D2", "D2", "C2", "G", "E", "G", "G", "G", "G", "E", "A", "A", "E2", "D2", "D2", "C2", "G", "E", "G", "D2", "C2", "C2"] },
+    { title: "Thằng Cuội", notes: ["F2", "D2", "C2", "D2", "F", "C2", "A", "A", "G", "A", "C2", "E", "D", "F", "C", "F", "D", "F", "G", "A", "F", "F", "G", "C2", "C2", "C2", "D2", "F", "G", "C2", "C2", "D2", "F2", "F2", "F2", "G2", "C2", "D2", "F2", "F2", "D2", "C2", "D2", "F", "C2", "A", "A", "G", "A", "C2", "E", "D", "F", "C", "F", "D", "F", "G", "A", "F"] },
+    { title: "Một Con Vịt", notes: ["C", "F", "C", "C", "F", "F", "G", "A", "A", "F", "C", "A", "A", "A", "C", "C", "C", "C", "C", "A", "A", "C", "C", "C", "A", "A", "F", "C", "A", "A", "A", "G", "F"] },
+    { title: "Twinkle Twinkle Little Star", notes: ["C", "C", "G", "G", "A", "A", "G", "F", "F", "E", "E", "D", "D", "C", "G", "G", "F", "F", "E", "E", "D", "G", "G", "F", "F", "E", "E", "D", "C", "C", "G", "G", "A", "A", "G", "F", "F", "E", "E", "D", "D", "C"] }, { title: "Baby Shark", notes: ["D", "E", "G", "G", "G", "G", "G", "G", "G", "D", "E", "G", "G", "G", "G", "G", "G", "G", "D", "E", "G", "G", "G", "G", "G", "G", "G", "F#", "F#", "E"] }, { title: "Happy Birthday", notes: ["C", "C", "D", "C", "F", "E", "C", "C", "D", "C", "G", "F", "C", "C", "C2", "A", "F", "E", "D", "A#", "A#", "A", "F", "G", "F"] }, { title: "ABC Song", notes: ["C", "C", "G", "G", "A", "A", "G", "F", "F", "E", "E", "D", "D", "C", "G", "G", "F", "F", "E", "E", "D", "G", "G", "F", "F", "E", "E", "D", "C", "C", "G", "G", "A", "A", "G", "F", "F", "E", "E", "D", "D", "C"] }, { title: "Jingle Bells", notes: ["E", "E", "E", "E", "E", "E", "E", "G", "C", "D", "E", "F", "F", "F", "F", "F", "E", "E", "E", "E", "E", "D", "D", "E", "D", "G", "E", "E", "E", "E", "E", "E", "E", "G", "C", "D", "E", "F", "F", "F", "F", "F", "E", "E", "E", "G", "G", "F", "D", "C"] }, { title: "Mary Had a Little Lamb", notes: ["E", "D", "C", "D", "E", "E", "E", "D", "D", "D", "E", "G", "G", "E", "D", "C", "D", "E", "E", "E", "E", "D", "D", "E", "D", "C"] }, { title: "Old MacDonald Had a Farm", notes: ["G", "G", "G", "D", "A", "A", "G", "B", "B", "A", "A", "G", "D", "G", "G", "G", "D", "A", "A", "G", "B", "B", "A", "A", "G"] }, { title: "London Bridge Is Falling Down", notes: ["G", "A", "G", "F", "E", "F", "G", "D", "E", "F", "E", "F", "G", "G", "A", "G", "F", "E", "F", "G", "D", "G", "E", "C"] }, { title: "The Wheels on the Bus", notes: ["C", "F", "F", "F", "F", "A", "C2", "A", "F", "G", "E", "C", "F", "F", "F", "F", "A", "C2", "A", "G", "C2", "F"] }, { title: "Row Row Row Your Boat", notes: ["C", "C", "C", "D", "E", "E", "D", "E", "F", "G", "C2", "C2", "C2", "G", "G", "G", "E", "E", "E", "C", "C", "C", "G", "F", "E", "D", "C"] }
+
+  
+  
+  
+  ];
+    
+    
+    
+    const piano = document.querySelector("#piano");
+    const songSelect = document.querySelector("#song");
+    const autoPlay = document.querySelector("#autoPlay");
+
+    const noteByKeyboard = new Map();
+    const vietnameseNoteNames = {
+      C: "Đô",
+      "C#": "Đô♯",
+      D: "Rê",
+      "D#": "Rê♯",
+      E: "Mi",
+      F: "Fa",
+      "F#": "Fa♯",
+      G: "Sol",
+      "G#": "Sol♯",
+      A: "La",
+      "A#": "La♯",
+      B: "Si",
+      C2: "Đô",
+      D2: "Rê",
+      E2: "Mi",
+      F2: "Fa"
+    };
+
+    let audioContext;
+    let selectedSong = songs[0];
+    let step = 0;
+    let visibleKeys = [];
+    let autoPlayTimer = null;
+
+    function getAudioContext() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioContext;
+    }
+
+    function playTone(noteName, isWrong = false) {
+      const note = notes.find((item) => item.name === noteName || item.label === noteName);
+      const context = getAudioContext();
+      const now = context.currentTime;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+
+      oscillator.type = isWrong ? "sawtooth" : "triangle";
+      oscillator.frequency.value = isWrong ? 140 : note.freq;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(isWrong ? 0.08 : 0.22, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + (isWrong ? 0.18 : 0.45));
+
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(now);
+      oscillator.stop(now + (isWrong ? 0.2 : 0.48));
+    }
+
+    function buildSongs() {
+      songs.forEach((song, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = song.title;
+        songSelect.appendChild(option);
+      });
+    }
+
+    function registerKeyboardNotes() {
+      notes.forEach((note) => {
+        if (note.key) {
+          noteByKeyboard.set(note.key, note.name);
+        }
+      });
+    }
+
+    function getNoteInfo(noteName) {
+      return notes.find((note) => note.name === noteName || note.label === noteName);
+    }
+
+    function getVietnameseNoteName(noteName) {
+      return vietnameseNoteNames[noteName] || noteName.replace("2", "");
+    }
+
+    function randomBetween(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function shuffleSlots() {
+      return [0, 1, 2].sort(() => Math.random() - 0.5);
+    }
+
+    function createKeyButton(noteName, slotIndex, songIndex) {
+      const note = getNoteInfo(noteName);
+      const displayName = getVietnameseNoteName(noteName);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `key ${note.type} slot-${slotIndex}`;
+      button.dataset.note = noteName;
+      button.dataset.songIndex = String(songIndex);
+      button.setAttribute("aria-label", `Phím ${displayName}`);
+      button.innerHTML = `<span>${displayName}</span>`;
+      button.style.setProperty("--key-y", `${randomBetween(-2.2, 2.2).toFixed(2)}rem`);
+      button.style.setProperty("--key-r", `${randomBetween(-5, 5).toFixed(1)}deg`);
+      button.addEventListener("click", () => pressNote(noteName, button, songIndex));
+      return button;
+    }
+
+    function initializeVisibleKeys() {
+      visibleKeys = selectedSong.notes.slice(0, 1).map((noteName, songIndex) => ({
+        noteName,
+        songIndex
+      }));
+    }
+
+    function advanceVisibleKeys() {
+      visibleKeys = [];
+      const nextIndex = step;
+
+      if (nextIndex < selectedSong.notes.length) {
+        visibleKeys.push({
+          noteName: selectedSong.notes[nextIndex],
+          songIndex: nextIndex
+        });
+      }
+    }
+
+    function renderVisibleKeys() {
+      piano.innerHTML = "";
+      const slots = shuffleSlots();
+
+      visibleKeys.forEach((item, index) => {
+        const button = createKeyButton(item.noteName, slots[index], item.songIndex);
+        if (item.songIndex === step) {
+          button.classList.add("target");
+        }
+        piano.appendChild(button);
+      });
+    }
+
+    function findVisibleKey(noteName, targetOnly = false) {
+      return Array.from(piano.querySelectorAll(".key")).find((key) => {
+        return key.dataset.note === noteName && (!targetOnly || key.classList.contains("target"));
+      });
+    }
+
+    function setTarget() {
+      const total = selectedSong.notes.length;
+      const done = step >= total;
+
+      if (done) {
+        piano.innerHTML = "";
+        stopAutoPlay();
+        return;
+      }
+
+      renderVisibleKeys();
+    }
+
+    function stopAutoPlay() {
+      window.clearInterval(autoPlayTimer);
+      autoPlayTimer = null;
+      autoPlay.textContent = "Auto Play";
+    }
+
+    function resetSong(index = Number(songSelect.value || 0)) {
+      stopAutoPlay();
+      selectedSong = songs[index];
+      step = 0;
+      initializeVisibleKeys();
+      setTarget();
+    }
+
+    function autoPlayStep() {
+      const expected = selectedSong.notes[step];
+      const key = expected ? findVisibleKey(expected, true) : null;
+
+      if (!key) {
+        stopAutoPlay();
+        return;
+      }
+
+      pressNote(expected, key, step);
+    }
+
+    function toggleAutoPlay() {
+      if (autoPlayTimer) {
+        stopAutoPlay();
+        return;
+      }
+
+      if (step >= selectedSong.notes.length) {
+        resetSong();
+      }
+
+      autoPlay.textContent = "Stop";
+      autoPlayTimer = window.setInterval(autoPlayStep, 650);
+      autoPlayStep();
+    }
+
+    function pressNote(noteName, key = null, songIndex = null) {
+      const expected = selectedSong.notes[step];
+      if (!expected) return;
+
+      const isCorrectStep = songIndex === null || songIndex === step;
+      const pressedKey = key || findVisibleKey(noteName, noteName === expected);
+      if (!pressedKey) return;
+
+      pressedKey.classList.add("active");
+      window.setTimeout(() => pressedKey.classList.remove("active"), 130);
+
+      if (noteName === expected && isCorrectStep) {
+        playTone(noteName);
+        pressedKey.remove();
+        step += 1;
+        advanceVisibleKeys();
+        setTarget();
+        return;
+      }
+
+      playTone(noteName, true);
+      pressedKey.classList.add("wrong");
+      window.setTimeout(() => pressedKey.classList.remove("wrong"), 450);
+    }
+
+    songSelect.addEventListener("change", () => resetSong(Number(songSelect.value)));
+    autoPlay.addEventListener("click", toggleAutoPlay);
+    
+    window.addEventListener("keydown", (event) => {
+      const noteName = noteByKeyboard.get(event.key.toLowerCase());
+      if (noteName && findVisibleKey(noteName)) {
+        event.preventDefault();
+        pressNote(noteName);
+      }
+    });
+
+    buildSongs();
+    registerKeyboardNotes();
+    resetSong(0);
+  </script>
+</body>
+</html>
